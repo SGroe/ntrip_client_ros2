@@ -13,7 +13,7 @@ Implemented changes on the original code:
 
 ## Launch ROS2 node
 
-Server properties are set in file ´´´resource/ntrip_client.properties´´´
+NTRIP server properties are set in file *resource/ntrip_client.properties*
 
 ```shell script
 ros2 launch ntrip_client start_ntrip_client.launch.py
