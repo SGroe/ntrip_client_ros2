@@ -93,12 +93,6 @@ class ntripconnect(Thread):
         self.stop = False
 
     def run(self):
-    
-        # Wait for current location
-        while self.ntc.longitude is None:
-            self.ntc.log('Waiting for GNSS location ...')
-            time.sleep(1)
-        self.ntc.log('GNSS location found!')
         
         response = self.send_gga_message()
 
@@ -158,6 +152,15 @@ class ntripconnect(Thread):
         Sends GGA message to the NTRIP caster via the specified connection
         """
     
+        # Wait for current location
+        waiting = False
+        while self.ntc.longitude is None:
+            if not waiting:
+                self.ntc.log('Waiting for GNSS location ...')
+            waiting = True
+            time.sleep(1)
+        self.ntc.log('Sending GGA message using available GNSS location ...')
+    
         if self.connection is not None:
             # close previous connection
             self.connection.close()
@@ -208,6 +211,9 @@ class ntripconnect(Thread):
         self.ntc.log('Nmeastring: ' + nmeastring)
         
         connection.send(nmeastring.encode("latin-1"))
+        
+        self.ntc.longitude = None
+        self.ntc.latitude = None
         
         return connection.getresponse()
 
