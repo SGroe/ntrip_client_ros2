@@ -41,8 +41,3 @@ The node is launched with the following command:
 ros2 launch ntrip_client start_ntrip_client.launch.py
 ```
 
-## Requirements
-
-```shell script
-pip install jproperties
-```
