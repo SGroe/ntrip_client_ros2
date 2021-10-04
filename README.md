@@ -1,4 +1,4 @@
-# ntrip_client
+# ntrip_client (ROS2 node)
 
 NTRIP client for ROS2 that sends NMEA-GGA messages to caster in return for RTCM correction messages.
 
@@ -11,9 +11,31 @@ Implemented changes on the original code:
  * Code converted from ROS1 to ROS2
  * Added continuous sending of GGA message to NTRIP caster (after first coordinate is received)
 
-## Launch ROS2 node
+## Configure and launch ROS2 node
 
-NTRIP server properties are set in file *resource/ntrip_client.properties*
+NTRIP server properties are set with the following ROS2 parameters:
+
+* server
+* user
+* password
+* stream
+
+This script can be used to set the parameter values after launching the node.
+
+```shell script
+ros2 param set /ntripclient server my_nrtk_server.com:7801
+ros2 param set /ntripclient user myuser
+ros2 param set /ntripclient password mypassword
+ros2 param set /ntripclient stream mystream
+```
+
+Dump the parameters, copy the yaml-file into the /config directory of this node and rebuild the node.
+
+```
+ros2 param dump /ntripclient
+```
+
+The node is launched with the following command:
 
 ```shell script
 ros2 launch ntrip_client start_ntrip_client.launch.py

@@ -1,0 +1,7 @@
+/ntripclient:
+  ros__parameters:
+    password: 'mypassword'
+    server: 'ntripserver.com:7801'
+    stream: 'mystream'
+    use_sim_time: false
+    user: 'myuser'

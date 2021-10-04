@@ -8,7 +8,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
@@ -19,11 +19,12 @@ from http.client import HTTPConnection
 import base64
 from threading import Thread
 
-from jproperties import Properties
 from ament_index_python.packages import get_package_prefix
 
 import rclpy
 from rclpy.node import Node
+from rclpy.exceptions import ParameterNotDeclaredException
+from rcl_interfaces.msg import ParameterType, ParameterDescriptor
 
 from sensor_msgs.msg import NavSatFix
 from mavros_msgs.msg import RTCM
@@ -49,15 +50,20 @@ class NTripClient(Node):
         self.rtcm_topic = '/rtcm'
         # self.nmea_topic = '/nmea'
         
-        properties = Properties()
-        filename = get_package_prefix('ntrip_client') + '/share/ament_index/resource_index/packages/ntrip_client.properties'
-        with open(filename, "rb") as file:
-            properties.load(file, "utf-8")
+        parameter_descriptor_server = ParameterDescriptor(name="NTRIP server", type=ParameterType.PARAMETER_STRING)
+        parameter_descriptor_user = ParameterDescriptor(name="NTRIP username for authentication", type=ParameterType.PARAMETER_STRING)
+        parameter_descriptor_password = ParameterDescriptor(name="NTRIP password for authentication", type=ParameterType.PARAMETER_STRING)
+        parameter_descriptor_stream = ParameterDescriptor(name="NTRIP stream", type=ParameterType.PARAMETER_STRING)
         
-        self.ntrip_server = properties.get("ntrip_server").data
-        self.ntrip_user = properties.get("ntrip_user").data
-        self.ntrip_pass = properties.get("ntrip_pass").data
-        self.ntrip_stream = properties.get("ntrip_stream").data
+        self.declare_parameter('server', 'ntripserver.com:7801', parameter_descriptor_server)
+        self.declare_parameter('user', 'myuser', parameter_descriptor_user)
+        self.declare_parameter('password', 'mypassword', parameter_descriptor_password)
+        self.declare_parameter('stream', 'mystream', parameter_descriptor_stream)
+        
+        self.ntrip_server = self.get_parameter('server').get_parameter_value().string_value
+        self.ntrip_user = self.get_parameter('user').get_parameter_value().string_value
+        self.ntrip_pass = self.get_parameter('password').get_parameter_value().string_value
+        self.ntrip_stream = self.get_parameter('stream').get_parameter_value().string_value
         
         self.nmea_gga = 'GPGGA,%02d%02d%04.1f,%09.4f,%s,%010.4f,%s,1,24,0.6,38.9,M,84.4,M,0,0'
         
@@ -95,6 +101,10 @@ class ntripconnect(Thread):
     def run(self):
         
         response = self.send_gga_message()
+        
+        while not response:
+            time.sleep(10)
+            self.send_gga_message()
 
         if response.status != 200:
             raise Exception("Response status " + str(response.status) + " > " + str(response.reason))
@@ -179,8 +189,11 @@ class ntripconnect(Thread):
             connection.putheader('Authorization', 'Basic ' + data.decode('utf-8'))
             connection.endheaders()
         except socket.gaierror:
-            self.ntc.log('Cannot create GET request. Please check HTTP connection!')
-            pass
+            self.ntc.log('Cannot create GET request on server ' + self.ntc.ntrip_server + '. Please check HTTP connection!')
+            self.ntc.log('- Server: ' + self.ntc.ntrip_server)
+            self.ntc.log('- User: ' + self.ntc.ntrip_user)
+            self.ntc.log('- Stream: ' + self.ntc.ntrip_stream)
+            return None
         
         now = datetime.datetime.utcnow()
         # nmeadata = self.ntc.nmea_gga % (now.hour, now.minute, now.second)
